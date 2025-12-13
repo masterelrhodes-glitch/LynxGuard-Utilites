@@ -44,7 +44,7 @@ module.exports = {
             components: [
               {
                 type: 10,
-                content: `## <:ch_market:1446338516304003214>  [${groupName}](${groupUrl})\n${groupDescription}\n\n* **Member Count:** ${memberCount}\n* **Group Owner:** [${ownerName}](${ownerLink})\n* **Group Administrators:**\n${adminLines}`
+                content: `## <:Logo:1447758148722233425>   [${groupName}](${groupUrl})\n${groupDescription}\n\n* **Member Count:** ${memberCount}\n* **Group Owner:** [${ownerName}](${ownerLink})\n* **Group Administrators:**\n${adminLines}`
               },
               {
                 type: 14
@@ -60,7 +60,7 @@ module.exports = {
                 ]
               }
             ],
-            accent_color: 28306353
+            accent_color: 0xED4C67    
           },
           {
             type: 1,
