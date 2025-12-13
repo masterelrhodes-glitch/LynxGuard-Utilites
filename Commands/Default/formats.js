@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder
 const Format = require('../../Database/format');
 
 const ADMIN_ROLE_ID = '1446352448037064755';
-const MODERATOR_ROLE_IDS = ['1446359563770265803', '1446352448037064755'];
+const MODERATOR_ROLE_IDS = ['1448100092358823966', '1448098877327806638'];
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -90,13 +90,13 @@ module.exports = {
         .setCustomId('format_name')
         .setLabel('Format Name')
         .setStyle(TextInputStyle.Short)
-        .setPlaceholder('Example: How to add LynxGuard')
+        .setPlaceholder('Example: "How to add LynxGuard"')
         .setMaxLength(100)
         .setRequired(true);
 
       const contentInput = new TextInputBuilder()
         .setCustomId('format_content')
-        .setLabel(isEmbed ? 'Message Contents (JSON Text)' : 'Message Contents (Text)')
+        .setLabel(isEmbed ? 'Message Contents (JSON Data)' : 'Message Contents (Text)')
         .setStyle(TextInputStyle.Paragraph)
         .setRequired(true);
 
