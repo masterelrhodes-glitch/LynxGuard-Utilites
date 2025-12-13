@@ -1,0 +1,4 @@
+module.exports = {
+  customID: "my-modal",
+  execute: async function (interaction, client, args) {},
+};
