@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const groupId = '117652749';
+const groupId = '358385542';
 
 module.exports = {
   name: 'group',
