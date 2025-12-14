@@ -42,6 +42,7 @@ class SentryPoller {
   async poll() {
     try {
       const issues = await this.fetchSentryIssues();
+      const foundErrors = [];
       
       for (const issue of issues) {
         const lastSeen = new Date(issue.lastSeen);
@@ -51,7 +52,6 @@ class SentryPoller {
           continue;
         }
         
-        // Fetch the latest event for this issue to get actual tag values
         const latestEvent = await this.fetchLatestEvent(issue.id);
         if (!latestEvent) continue;
         
@@ -64,21 +64,46 @@ class SentryPoller {
         
         const errorId = tags.error_id || tags.custom_error_id || issue.id;
         
-        if (this.processedIssues.has(errorId)) continue;
-        
         const threadCheck = await this.checkThreadExists(errorId);
+        
+        const guildId = tags.guild_id || latestEvent.contexts?.guild?.id || 'Unknown';
+        const guildName = tags.guild_name || latestEvent.contexts?.guild?.name || 'Unknown Server';
+        const userId = tags.user_id || latestEvent.user?.id || 'Unknown';
+        const userName = tags.last_triggered_by || latestEvent.user?.username || 'Unknown';
+        
         if (threadCheck.exists) {
-          this.processedIssues.add(errorId);
+          const timeSinceLastSeenMs = Date.now() - lastSeen.getTime();
+          const secondsAgo = Math.floor(timeSinceLastSeenMs / 1000);
+          let timeAgoStr;
           
-          const tags = {};
-          if (latestEvent.tags) {
-            latestEvent.tags.forEach(tag => {
-              tags[tag.key] = tag.value;
-            });
+          if (secondsAgo < 60) {
+            timeAgoStr = `${secondsAgo} seconds ago`;
+          } else if (secondsAgo < 3600) {
+            const minutesAgo = Math.floor(secondsAgo / 60);
+            timeAgoStr = `${minutesAgo} minute${minutesAgo !== 1 ? 's' : ''} ago`;
+          } else {
+            const hoursAgo = Math.floor(secondsAgo / 3600);
+            timeAgoStr = `${hoursAgo} hour${hoursAgo !== 1 ? 's' : ''} ago`;
           }
           
-          const guildId = tags.guild_id || latestEvent.contexts?.guild?.id || 'Unknown';
-          const guildName = tags.guild_name || latestEvent.contexts?.guild?.name || 'Unknown Server';
+          this.client.logs.info(`**Error ${errorId}** - Guild ${guildName} (${guildId}) - User ${userName} (${userId}) - Time: ${timeAgoStr}`);
+          
+          try {
+            const userMention = userId !== 'Unknown' ? `<@${userId}>` : userName;
+            const timestamp = Math.floor(lastSeen.getTime() / 1000);
+            
+            await threadCheck.thread.send({
+              content: `**Error triggered again**\n` +
+                       `**Time:** <t:${timestamp}:R> (${timeAgoStr})\n` +
+                       `**User:** ${userMention} \`(${userId})\`\n` +
+                       `**Guild:** ${guildName} \`(${guildId})\`\n` +
+                       `**Occurrences this week:** ${issue.count || 1}`
+            });
+            
+            this.client.logs.debug(`Sent recurrence message to thread for error ${errorId}`);
+          } catch (err) {
+            this.client.logs.error(`Could not send message to thread for error ${errorId}: ${err.message}`);
+          }
           
           if (guildId !== 'Unknown') {
             try {
@@ -97,12 +122,11 @@ class SentryPoller {
             }
           }
           
-          this.client.logs.debug(`Thread already exists for error ${errorId}, sent recurrence notice`);
           continue;
         }
         
         await this.createErrorThread(issue, latestEvent, errorId);
-        this.processedIssues.add(errorId);
+        this.client.logs.info(`Created new thread for **Error ${errorId}** - Guild ${guildName} (${guildId}) - User ${userName} (${userId})`);
       }
     } catch (error) {
       this.client.logs.error('Error polling Sentry:', error.message);
@@ -147,7 +171,6 @@ class SentryPoller {
 
       const event = await response.json();
       
-      // Debug log the event data
       this.client.logs.debug(`Event tags for issue ${issueId}:`, JSON.stringify(event.tags, null, 2));
       this.client.logs.debug(`Event user for issue ${issueId}:`, JSON.stringify(event.user, null, 2));
       this.client.logs.debug(`Event contexts for issue ${issueId}:`, JSON.stringify(event.contexts, null, 2));
@@ -195,7 +218,6 @@ class SentryPoller {
       const lastSeen = new Date(issue.lastSeen);
       const timestamp = Math.floor(lastSeen.getTime() / 1000);
 
-      // Extract tags from the event (not the issue)
       const tags = {};
       if (event.tags) {
         event.tags.forEach(tag => {
@@ -209,24 +231,19 @@ class SentryPoller {
       const channelContext = contexts.channel || {};
       const interactionContext = contexts.interaction || {};
 
-      // Extract user info
       const userId = tags.user_id || event.user?.id || 'Unknown';
       const userName = tags.last_triggered_by || event.user?.username || 'Unknown';
       
-      // Extract guild info
       const guildId = tags.guild_id || guildContext.id || 'Unknown';
       const guildName = tags.guild_name || guildContext.name || 'Unknown Server';
       
-      // Extract channel info
       const channelId = tags.channel_id || channelContext.id || interactionContext.channelId || 'Unknown';
       const channelName = tags.channel_name || channelContext.name || 'unknown-channel';
       
-      // Extract error location info
       const fileName = tags.error_file || errorTracking.file || 'Unknown';
       const errorLine = tags.error_line || errorTracking.errorLine || '??';
       const errorColumn = tags.error_column || errorTracking.errorColumn || '??';
       
-      // Extract interaction info
       const interactionType = tags.interaction_type || interactionContext.type || 'Unknown';
       const commandName = tags.command_name || interactionContext.commandName || errorTracking.command || 'Unknown';
 
@@ -234,7 +251,6 @@ class SentryPoller {
       const errorType = issue.title || 'Unknown Error';
       const errorMessage = issue.culprit || errorTracking.errorMessage || 'No details available';
 
-      // Build stack trace from event
       let stackTrace = errorMessage;
       if (event.entries && event.entries.length > 0) {
         const entry = event.entries[0];

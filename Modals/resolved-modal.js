@@ -11,33 +11,51 @@ module.exports = {
     try {
       const modal = args[0];
       const errorId = args[1];
-      const commitHash = interaction.fields.getTextInputValue('commit_hash').trim().toLowerCase();
+      const commitHashInput = interaction.fields.getTextInputValue('commit_hash').trim();
+      const commitHash = commitHashInput.toLowerCase();
 
       await interaction.deferUpdate();
+
+      if (commitHash !== 'null' && commitHashInput.length > 7) {
+        await interaction.followUp({
+          content: `Invalid commit hash length. Commit hash must be 7 characters or less.\n\nYou entered: \`${commitHashInput}\` (${commitHashInput.length} characters)\n\nPlease try again, or enter \`null\` if no commit is needed.`,
+          ephemeral: true
+        });
+        return;
+      }
 
       const guild = await client.guilds.fetch(GUILD_ID);
       const repoChannel = await guild.channels.fetch(REPO_CHANNEL_ID);
       
-      const messages = await repoChannel.messages.fetch({ limit: 100 });
-      const commitMessage = messages.find(msg => {
-        if (msg.embeds.length === 0) return false;
-        
-        const embed = msg.embeds[0];
-        const description = embed.description?.toLowerCase() || '';
-        const title = embed.title?.toLowerCase() || '';
-        const fields = embed.fields?.map(f => f.value.toLowerCase()).join(' ') || '';
-        
-        return description.includes(commitHash) || 
-               title.includes(commitHash) || 
-               fields.includes(commitHash);
-      });
+      let commitMessage = null;
+      let commitField = null;
 
-      if (!commitMessage) {
-        await interaction.followUp({
-          content: `Could not find a commit with hash \`${commitHash}\` in <#${REPO_CHANNEL_ID}>.\n\nPlease verify the commit hash and try again.`,
-          ephemeral: true
+      if (commitHash !== 'null') {
+        const messages = await repoChannel.messages.fetch({ limit: 100 });
+        commitMessage = messages.find(msg => {
+          if (msg.embeds.length === 0) return false;
+          
+          const embed = msg.embeds[0];
+          const description = embed.description?.toLowerCase() || '';
+          const title = embed.title?.toLowerCase() || '';
+          const fields = embed.fields?.map(f => f.value.toLowerCase()).join(' ') || '';
+          
+          return description.includes(commitHash) || 
+                 title.includes(commitHash) || 
+                 fields.includes(commitHash);
         });
-        return;
+
+        if (!commitMessage) {
+          await interaction.followUp({
+            content: `Could not find a commit with hash \`${commitHashInput}\` in <#${REPO_CHANNEL_ID}>.\n\nPlease verify the commit hash and try again, or enter \`null\` if no commit is needed.`,
+            ephemeral: true
+          });
+          return;
+        }
+
+        commitField = { name: 'Commit', value: `[${commitHashInput}](${commitMessage.url})`, inline: true };
+      } else {
+        commitField = { name: 'Code Changes', value: `${interaction.user} decided that no code fixes would be needed for this command.`, inline: false };
       }
 
       const thread = interaction.channel;
@@ -54,7 +72,7 @@ module.exports = {
         .setDescription('This error has been fixed and resolved.')
         .addFields(
           { name: 'Resolved by', value: `<@${interaction.user.id}>`, inline: true },
-          { name: 'Commit', value: `[${commitHash}](${commitMessage.url})`, inline: true }
+          commitField
         )
         .setTimestamp();
 
@@ -89,7 +107,8 @@ module.exports = {
         components: [disabledRow]
       });
 
-      client.logs.success(`Error ${errorId} resolved by ${interaction.user.tag} with commit ${commitHash}`);
+      const commitLog = commitHash === 'null' ? 'no commit needed' : `commit ${commitHashInput}`;
+      client.logs.success(`Error ${errorId} resolved by ${interaction.user.tag} with ${commitLog}`);
       
     } catch (error) {
       console.error('Error in resolved modal:', error);

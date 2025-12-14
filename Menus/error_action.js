@@ -45,7 +45,7 @@ module.exports = {
           .setLabel('First 7 digits of repo commit hash')
           .setStyle(TextInputStyle.Short)
           .setPlaceholder('abc1234')
-          .setMinLength(7)
+          .setMinLength(4)
           .setMaxLength(7)
           .setRequired(true);
 
