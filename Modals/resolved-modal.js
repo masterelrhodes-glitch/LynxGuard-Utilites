@@ -1,4 +1,4 @@
-const { StringSelectMenuBuilder, ActionRowBuilder } = require('discord.js');
+const { StringSelectMenuBuilder, ActionRowBuilder, EmbedBuilder } = require('discord.js');
 
 const GUILD_ID = '1446351663622389770';
 const RESOLVED_TAG_ID = '1449647407859109940';
@@ -8,55 +8,106 @@ module.exports = {
   customId: (id) => id.startsWith('resolved_modal_'),
   
   async execute(interaction) {
-    const errorId = interaction.customId.replace('resolved_modal_', '');
-    const commitHash = interaction.fields.getTextInputValue('commit_hash');
+    try {
+      const errorId = interaction.customId.replace('resolved_modal_', '');
+      const commitHash = interaction.fields.getTextInputValue('commit_hash').trim().toLowerCase();
 
-    await interaction.deferUpdate();
+      await interaction.deferUpdate();
 
-    const guild = await interaction.client.guilds.fetch(GUILD_ID);
-    const repoChannel = await guild.channels.fetch(REPO_CHANNEL_ID);
-    
-    const messages = await repoChannel.messages.fetch({ limit: 100 });
-    const commitMessage = messages.find(msg => 
-      msg.embeds.length > 0 && 
-      msg.embeds[0].description && 
-      msg.embeds[0].description.includes(commitHash)
-    );
-
-    if (!commitMessage) {
-      await interaction.followUp({
-        content: 'Could not find a commit with that hash in the repository channel.',
-        ephemeral: true
+      const guild = await interaction.client.guilds.fetch(GUILD_ID);
+      const repoChannel = await guild.channels.fetch(REPO_CHANNEL_ID);
+      
+      const messages = await repoChannel.messages.fetch({ limit: 100 });
+      const commitMessage = messages.find(msg => {
+        if (msg.embeds.length === 0) return false;
+        
+        const embed = msg.embeds[0];
+        const description = embed.description?.toLowerCase() || '';
+        const title = embed.title?.toLowerCase() || '';
+        const fields = embed.fields?.map(f => f.value.toLowerCase()).join(' ') || '';
+        
+        return description.includes(commitHash) || 
+               title.includes(commitHash) || 
+               fields.includes(commitHash);
       });
-      return;
-    }
 
-    const thread = interaction.channel;
-    await thread.setName(`Resolved ${errorId}`);
-    await thread.setAppliedTags([RESOLVED_TAG_ID]);
-    await thread.setLocked(true);
+      if (!commitMessage) {
+        await interaction.followUp({
+          content: `Could not find a commit with hash \`${commitHash}\` in <#${REPO_CHANNEL_ID}>.\n\nPlease verify the commit hash and try again.`,
+          ephemeral: true
+        });
+        return;
+      }
 
-    await interaction.followUp({
-      content: `**Resolved by <@${interaction.user.id}>**\nCommit: ${commitMessage.url}`,
-      allowedMentions: { parse: [] }
-    });
+      const thread = interaction.channel;
+      
+      const currentName = thread.name;
+      const newName = `[RESOLVED] ${currentName.replace('[REVIEWED] ', '')}`;
+      await thread.setName(newName);
+      
+      await thread.setAppliedTags([RESOLVED_TAG_ID]);
+      
+      const resolveEmbed = new EmbedBuilder()
+        .setColor(0x00FF00)
+        .setTitle('Error Resolved')
+        .setDescription('This error has been fixed and resolved.')
+        .addFields(
+          { name: 'Resolved by', value: `<@${interaction.user.id}>`, inline: true },
+          { name: 'Commit', value: `[${commitHash}](${commitMessage.url})`, inline: true }
+        )
+        .setTimestamp();
 
-    const disabledSelectMenu = new StringSelectMenuBuilder()
-      .setCustomId(`error_action_${errorId}`)
-      .setPlaceholder('Resolved')
-      .addOptions([
-        {
-          label: 'Resolved',
-          value: 'resolved',
-          description: 'This error has been resolved'
+      await thread.send({
+        embeds: [resolveEmbed]
+      });
+
+      setTimeout(async () => {
+        try {
+          await thread.setLocked(true);
+          await thread.setArchived(true);
+        } catch (lockError) {
+          console.error('Error locking thread:', lockError);
         }
-      ])
-      .setDisabled(true);
+      }, 3000);
 
-    const disabledRow = new ActionRowBuilder().addComponents(disabledSelectMenu);
+      const disabledSelectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`error_action_${errorId}`)
+        .setPlaceholder('Resolved')
+        .addOptions([
+          {
+            label: 'Resolved',
+            value: 'resolved',
+            description: 'This error has been resolved'
+          }
+        ])
+        .setDisabled(true);
 
-    await interaction.message.edit({
-      components: [disabledRow]
-    });
+      const disabledRow = new ActionRowBuilder().addComponents(disabledSelectMenu);
+
+      await interaction.message.edit({
+        components: [disabledRow]
+      });
+
+      interaction.client.logs.success(`Error ${errorId} resolved by ${interaction.user.tag} with commit ${commitHash}`);
+      
+    } catch (error) {
+      console.error('Error in resolved modal:', error);
+      
+      try {
+        if (interaction.deferred) {
+          await interaction.followUp({
+            content: 'An error occurred while marking this as resolved.',
+            ephemeral: true
+          });
+        } else if (!interaction.replied) {
+          await interaction.reply({
+            content: 'An error occurred while marking this as resolved.',
+            ephemeral: true
+          });
+        }
+      } catch (followUpError) {
+        console.error('Error sending error message:', followUpError);
+      }
+    }
   }
 };
