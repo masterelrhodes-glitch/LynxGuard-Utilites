@@ -27,10 +27,13 @@ CHECK_INTENTS=true
 CHECK_EVENT_NAMES=true
 REGISTER_COMMANDS=true
 FANCY_ERRORS=true
+
+# ── Sentry Integration ──────────────────────────────────────────────
+SENTRY_API_TOKEN=
 `;
   fs.writeFileSync(ENV_PATH, TEMPLATE, { flag: "wx" });
   console.error(
-    "[SETUP] Created .env. Fill it out (at least TOKEN + APP_ID) then re-run."
+    "[SETUP] Created .env. Fill it out (at least TOKEN + APP_ID + SENTRY_API_TOKEN) then re-run."
   );
   process.exit(1);
 }
@@ -44,15 +47,12 @@ const ConfigTemplate = {
   TOKEN: "string",
   APP_ID: "string",
   DEV_GUILD_ID: "string",
-
   MONGO_URI: "string",
   DB_MAX_IMMEDIATE_RETRIES: "number",
   DB_SLOW_RETRY_MS: "number",
   DB_BACKOFF_BASE: "number",
   DB_MAX_BACKOFF: "number",
-
   PREFIX: "string",
-
   HOT_RELOAD: "boolean",
   PROCESS_HANDLERS: "boolean",
   CHECK_INTENTS: "boolean",
@@ -68,9 +68,7 @@ for (const [key, type] of Object.entries(ConfigTemplate)) {
   }
   if (typeof config[key] !== type) {
     Log.error(
-      `[~] Expected ${key} to be a ${type} in config.json - Got ${typeof config[
-        key
-      ]} instead`
+      `[~] Expected ${key} to be a ${type} in config.json - Got ${typeof config[key]} instead`
     );
     process.exit(1);
   }
@@ -91,6 +89,7 @@ const { Client } = require("discord.js");
 const Debounce = require("./Utils/Debounce");
 const { RESPONSE_CACHE } = require("./Events/InteractionHandler");
 const { resolve } = require("node:path");
+const SentryPoller = require('./SentryPoller');
 
 require("./Utils/ProcessHandler");
 
@@ -99,7 +98,7 @@ const preloadTime = Number(preloadEnd - preloadStart) / 1e6;
 Log.custom(`Preload time: ${~~preloadTime}ms`, 0x7946ff);
 
 const client = new Client({
-  intents: ["MessageContent", "GuildMessages", "DirectMessages"],
+  intents: ["Guilds", "GuildMessages", "MessageContent"],
 });
 
 client.config = config;
@@ -169,9 +168,7 @@ for (const [path, cache] of Object.entries(COMPONENT_FOLDERS)) {
 
   if (!existsSync(fullPath)) {
     Log.error(
-      `The '${
-        path.split("/")[1]
-      }' folder does not exist - Check the relative path!`
+      `The '${path.split("/")[1]}' folder does not exist - Check the relative path!`
     );
     delete COMPONENT_FOLDERS[path];
     delete PRESET_FILES[path];
@@ -181,15 +178,6 @@ for (const [path, cache] of Object.entries(COMPONENT_FOLDERS)) {
   ComponentLoader(path, cache);
   Log.debug(`Loaded ${cache.size} ${path.split("/")[1]}`);
 }
-
-Log.custom('=== BUTTON DEBUG ===', 0xff00ff);
-Log.custom(`Total buttons loaded: ${client.buttons.size}`, 0xff00ff);
-Log.custom('Button names:', 0xff00ff);
-client.buttons.forEach((button, name) => {
-  Log.custom(`  - "${name}" -> customId: "${button.customId}"`, 0xff00ff);
-});
-Log.custom('===================', 0xff00ff);
-
 
 if (config.CHECK_INTENTS) {
   CheckIntents(client);
@@ -286,10 +274,11 @@ async function PresetFile(cache, componentFolder, callback, filePath) {
   callback(filePath);
 }
 
+const sentryPoller = new SentryPoller(client);
+
 (async () => {
   try {
     await setupDatabase(client);
-
     initProcessHandlers(client);
   } catch (e) {
     Log.error(`[DB] failed to initialize: ${e?.message || e}`);
@@ -301,6 +290,9 @@ async function PresetFile(cache, componentFolder, callback, filePath) {
 
 client.on("clientReady", function () {
   Log.custom(`Logged in as ${client.user.tag}!`, 0x7946ff);
+  
+  sentryPoller.start();
+  
   if (!config.HOT_RELOAD) {
     Log.warn("Hot reload is disabled in config.json");
     return;

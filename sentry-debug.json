@@ -1,0 +1,429 @@
+{
+  "id": "7111367387",
+  "shareId": null,
+  "shortId": "NODE-5",
+  "title": "TypeError: Cannot read properties of null (reading 'username')",
+  "culprit": "Object.execute(LynxGuard.commands:test-sentry)",
+  "permalink": "https://lynxgaurd.sentry.io/issues/7111367387/",
+  "logger": null,
+  "level": "error",
+  "status": "unresolved",
+  "statusDetails": {},
+  "substatus": "new",
+  "isPublic": false,
+  "platform": "node",
+  "project": {
+    "id": "4510508783566848",
+    "name": "node",
+    "slug": "node",
+    "platform": "node"
+  },
+  "type": "error",
+  "metadata": {
+    "value": "Cannot read properties of null (reading 'username')",
+    "type": "TypeError",
+    "filename": "C:\\Users\\evere\\Documents\\GitHub\\LynxGuard\\commands\\test-sentry.js",
+    "function": "Object.execute",
+    "in_app_frame_mix": "mixed",
+    "sdk": {
+      "name": "sentry.javascript.node",
+      "name_normalized": "sentry.javascript.node"
+    },
+    "initial_priority": 75
+  },
+  "numComments": 0,
+  "assignedTo": null,
+  "isBookmarked": false,
+  "isSubscribed": false,
+  "subscriptionDetails": null,
+  "hasSeen": false,
+  "annotations": [],
+  "issueType": "error",
+  "issueCategory": "error",
+  "priority": "high",
+  "priorityLockedAt": null,
+  "seerFixabilityScore": null,
+  "seerAutofixLastTriggered": null,
+  "isUnhandled": false,
+  "count": "1",
+  "userCount": 1,
+  "firstSeen": "2025-12-14T19:12:09.039000Z",
+  "lastSeen": "2025-12-14T19:12:09Z",
+  "firstRelease": null,
+  "lastRelease": null,
+  "tags": [
+    {
+      "key": "channel_id",
+      "name": "Channel Id",
+      "totalValues": 1
+    },
+    {
+      "key": "channel_name",
+      "name": "Channel Name",
+      "totalValues": 1
+    },
+    {
+      "key": "command_name",
+      "name": "Command Name",
+      "totalValues": 1
+    },
+    {
+      "key": "custom_error_id",
+      "name": "Custom Error Id",
+      "totalValues": 1
+    },
+    {
+      "key": "environment",
+      "name": "Environment",
+      "totalValues": 1
+    },
+    {
+      "key": "error_column",
+      "name": "Error Column",
+      "totalValues": 1
+    },
+    {
+      "key": "error_file",
+      "name": "Error File",
+      "totalValues": 1
+    },
+    {
+      "key": "error_id",
+      "name": "Error Id",
+      "totalValues": 1
+    },
+    {
+      "key": "error_line",
+      "name": "Error Line",
+      "totalValues": 1
+    },
+    {
+      "key": "guild_id",
+      "name": "Guild Id",
+      "totalValues": 1
+    },
+    {
+      "key": "guild_member_count",
+      "name": "Guild Member Count",
+      "totalValues": 1
+    },
+    {
+      "key": "guild_name",
+      "name": "Guild Name",
+      "totalValues": 1
+    },
+    {
+      "key": "handled",
+      "name": "Handled",
+      "totalValues": 1
+    },
+    {
+      "key": "interaction_type",
+      "name": "Interaction Type",
+      "totalValues": 1
+    },
+    {
+      "key": "last_triggered_by",
+      "name": "Last Triggered By",
+      "totalValues": 1
+    },
+    {
+      "key": "level",
+      "name": "Level",
+      "totalValues": 1
+    },
+    {
+      "key": "mechanism",
+      "name": "Mechanism",
+      "totalValues": 1
+    },
+    {
+      "key": "os",
+      "name": "OS",
+      "totalValues": 1
+    },
+    {
+      "key": "os.name",
+      "name": "Os.Name",
+      "totalValues": 1
+    },
+    {
+      "key": "runtime",
+      "name": "Runtime",
+      "totalValues": 1
+    },
+    {
+      "key": "runtime.name",
+      "name": "Runtime.Name",
+      "totalValues": 1
+    },
+    {
+      "key": "server_name",
+      "name": "Server",
+      "totalValues": 1
+    },
+    {
+      "key": "timestamp",
+      "name": "Timestamp",
+      "totalValues": 1
+    },
+    {
+      "key": "user",
+      "name": "User",
+      "totalValues": 1
+    },
+    {
+      "key": "user_id",
+      "name": "User Id",
+      "totalValues": 1
+    }
+  ],
+  "activity": [
+    {
+      "id": "0",
+      "user": null,
+      "sentry_app": null,
+      "type": "first_seen",
+      "data": {
+        "priority": "high"
+      },
+      "dateCreated": "2025-12-14T19:12:09.039000Z"
+    }
+  ],
+  "seenBy": [],
+  "pluginActions": [],
+  "pluginIssues": [],
+  "pluginContexts": [],
+  "userReportCount": 0,
+  "stats": {
+    "24h": [
+      [
+        1765652400,
+        0
+      ],
+      [
+        1765656000,
+        0
+      ],
+      [
+        1765659600,
+        0
+      ],
+      [
+        1765663200,
+        0
+      ],
+      [
+        1765666800,
+        0
+      ],
+      [
+        1765670400,
+        0
+      ],
+      [
+        1765674000,
+        0
+      ],
+      [
+        1765677600,
+        0
+      ],
+      [
+        1765681200,
+        0
+      ],
+      [
+        1765684800,
+        0
+      ],
+      [
+        1765688400,
+        0
+      ],
+      [
+        1765692000,
+        0
+      ],
+      [
+        1765695600,
+        0
+      ],
+      [
+        1765699200,
+        0
+      ],
+      [
+        1765702800,
+        0
+      ],
+      [
+        1765706400,
+        0
+      ],
+      [
+        1765710000,
+        0
+      ],
+      [
+        1765713600,
+        0
+      ],
+      [
+        1765717200,
+        0
+      ],
+      [
+        1765720800,
+        0
+      ],
+      [
+        1765724400,
+        0
+      ],
+      [
+        1765728000,
+        0
+      ],
+      [
+        1765731600,
+        0
+      ],
+      [
+        1765735200,
+        0
+      ],
+      [
+        1765738800,
+        1
+      ]
+    ],
+    "30d": [
+      [
+        1763078400,
+        0
+      ],
+      [
+        1763164800,
+        0
+      ],
+      [
+        1763251200,
+        0
+      ],
+      [
+        1763337600,
+        0
+      ],
+      [
+        1763424000,
+        0
+      ],
+      [
+        1763510400,
+        0
+      ],
+      [
+        1763596800,
+        0
+      ],
+      [
+        1763683200,
+        0
+      ],
+      [
+        1763769600,
+        0
+      ],
+      [
+        1763856000,
+        0
+      ],
+      [
+        1763942400,
+        0
+      ],
+      [
+        1764028800,
+        0
+      ],
+      [
+        1764115200,
+        0
+      ],
+      [
+        1764201600,
+        0
+      ],
+      [
+        1764288000,
+        0
+      ],
+      [
+        1764374400,
+        0
+      ],
+      [
+        1764460800,
+        0
+      ],
+      [
+        1764547200,
+        0
+      ],
+      [
+        1764633600,
+        0
+      ],
+      [
+        1764720000,
+        0
+      ],
+      [
+        1764806400,
+        0
+      ],
+      [
+        1764892800,
+        0
+      ],
+      [
+        1764979200,
+        0
+      ],
+      [
+        1765065600,
+        0
+      ],
+      [
+        1765152000,
+        0
+      ],
+      [
+        1765238400,
+        0
+      ],
+      [
+        1765324800,
+        0
+      ],
+      [
+        1765411200,
+        0
+      ],
+      [
+        1765497600,
+        0
+      ],
+      [
+        1765584000,
+        0
+      ],
+      [
+        1765670400,
+        1
+      ]
+    ]
+  },
+  "participants": []
+}
