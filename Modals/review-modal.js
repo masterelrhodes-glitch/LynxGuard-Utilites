@@ -4,11 +4,12 @@ const UNRESOLVED_TAG_ID = '1449647367866552330';
 const REVIEWED_TAG_ID = '1449647392063357083';
 
 module.exports = {
-  customId: (id) => id.startsWith('review_modal_'),
+  customID: 'review',
   
-  async execute(interaction) {
+  async execute(interaction, client, args) {
     try {
-      const errorId = interaction.customId.replace('review_modal_', '');
+      const modal = args[0];
+      const errorId = args[1];
       const reason = interaction.fields.getTextInputValue('review_reason');
 
       await interaction.deferUpdate();
@@ -28,15 +29,8 @@ module.exports = {
       }
       await thread.setAppliedTags(currentTags);
 
-      const reviewEmbed = new EmbedBuilder()
-        .setColor(0xFFA500)
-        .setTitle('Error Reviewed')
-        .setDescription(reason)
-        .setFooter({ text: `Reviewed by ${interaction.user.tag}` })
-        .setTimestamp();
-
       await thread.send({
-        embeds: [reviewEmbed]
+        content: `**Error Reviewed by <@${interaction.user.id}>**\n- ${reason}\n-# <@${interaction.user.id}> Marked the error ready to be resolved`
       });
 
       const updatedSelectMenu = new StringSelectMenuBuilder()
@@ -61,7 +55,7 @@ module.exports = {
         components: [updatedRow]
       });
 
-      interaction.client.logs.success(`Error ${errorId} reviewed by ${interaction.user.tag}`);
+      client.logs.success(`Error ${errorId} reviewed by ${interaction.user.tag}`);
       
     } catch (error) {
       console.error('Error in review modal:', error);

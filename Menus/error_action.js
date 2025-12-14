@@ -1,12 +1,19 @@
 const { ModalBuilder, TextInputBuilder, TextInputStyle, ActionRowBuilder } = require('discord.js');
 
 module.exports = {
-  customId: (id) => id.startsWith('error_action_'),
+  customID: 'error',
   
-  async execute(interaction) {
+  async execute(interaction, client, args) {
     try {
-      const errorId = interaction.customId.replace('error_action_', '');
+      console.log('[MENU DEBUG] Execute called');
+      console.log('[MENU DEBUG] Args:', args);
+      console.log('[MENU DEBUG] Values:', interaction.values);
+      
       const action = interaction.values[0];
+      const errorId = args[1];
+      
+      console.log('[MENU DEBUG] Action:', action);
+      console.log('[MENU DEBUG] Error ID:', errorId);
 
       if (action === 'review') {
         const modal = new ModalBuilder()
@@ -26,6 +33,7 @@ module.exports = {
         modal.addComponents(row);
 
         await interaction.showModal(modal);
+        console.log('[MENU DEBUG] Review modal shown');
         
       } else if (action === 'resolved') {
         const modal = new ModalBuilder()
@@ -45,9 +53,11 @@ module.exports = {
         modal.addComponents(row);
 
         await interaction.showModal(modal);
+        console.log('[MENU DEBUG] Resolved modal shown');
       }
     } catch (error) {
       console.error('Error in error_action menu:', error);
+      console.error('Stack:', error.stack);
       
       if (!interaction.replied && !interaction.deferred) {
         await interaction.reply({

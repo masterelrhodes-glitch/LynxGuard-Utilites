@@ -5,16 +5,17 @@ const RESOLVED_TAG_ID = '1449647407859109940';
 const REPO_CHANNEL_ID = '1448109227150282812';
 
 module.exports = {
-  customId: (id) => id.startsWith('resolved_modal_'),
+  customID: 'resolved',
   
-  async execute(interaction) {
+  async execute(interaction, client, args) {
     try {
-      const errorId = interaction.customId.replace('resolved_modal_', '');
+      const modal = args[0];
+      const errorId = args[1];
       const commitHash = interaction.fields.getTextInputValue('commit_hash').trim().toLowerCase();
 
       await interaction.deferUpdate();
 
-      const guild = await interaction.client.guilds.fetch(GUILD_ID);
+      const guild = await client.guilds.fetch(GUILD_ID);
       const repoChannel = await guild.channels.fetch(REPO_CHANNEL_ID);
       
       const messages = await repoChannel.messages.fetch({ limit: 100 });
@@ -48,7 +49,7 @@ module.exports = {
       await thread.setAppliedTags([RESOLVED_TAG_ID]);
       
       const resolveEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
+        .setColor(0x808080)
         .setTitle('Error Resolved')
         .setDescription('This error has been fixed and resolved.')
         .addFields(
@@ -88,7 +89,7 @@ module.exports = {
         components: [disabledRow]
       });
 
-      interaction.client.logs.success(`Error ${errorId} resolved by ${interaction.user.tag} with commit ${commitHash}`);
+      client.logs.success(`Error ${errorId} resolved by ${interaction.user.tag} with commit ${commitHash}`);
       
     } catch (error) {
       console.error('Error in resolved modal:', error);

@@ -51,6 +51,7 @@ class SentryPoller {
           continue;
         }
         
+        // Fetch the latest event for this issue to get actual tag values
         const latestEvent = await this.fetchLatestEvent(issue.id);
         if (!latestEvent) continue;
         
@@ -65,10 +66,38 @@ class SentryPoller {
         
         if (this.processedIssues.has(errorId)) continue;
         
-        const exists = await this.checkThreadExists(errorId);
-        if (exists) {
+        const threadCheck = await this.checkThreadExists(errorId);
+        if (threadCheck.exists) {
           this.processedIssues.add(errorId);
-          this.client.logs.debug(`Thread already exists for error ${errorId}, skipping`);
+          
+          const tags = {};
+          if (latestEvent.tags) {
+            latestEvent.tags.forEach(tag => {
+              tags[tag.key] = tag.value;
+            });
+          }
+          
+          const guildId = tags.guild_id || latestEvent.contexts?.guild?.id || 'Unknown';
+          const guildName = tags.guild_name || latestEvent.contexts?.guild?.name || 'Unknown Server';
+          
+          if (guildId !== 'Unknown') {
+            try {
+              const errorGuild = await this.client.guilds.fetch(guildId);
+              const errorOwner = await errorGuild.fetchOwner();
+              
+              await errorOwner.send({
+                content: `**Error \`${errorId}\` was triggered again in ${guildName}**\n` +
+                         `This error already has an open thread: ${threadCheck.thread.url}\n` +
+                         `Please check the thread for more details.`
+              }).catch(err => {
+                this.client.logs.debug(`Could not DM server owner about error recurrence: ${err.message}`);
+              });
+            } catch (err) {
+              this.client.logs.debug(`Could not notify server owner about error recurrence: ${err.message}`);
+            }
+          }
+          
+          this.client.logs.debug(`Thread already exists for error ${errorId}, sent recurrence notice`);
           continue;
         }
         
@@ -118,6 +147,7 @@ class SentryPoller {
 
       const event = await response.json();
       
+      // Debug log the event data
       this.client.logs.debug(`Event tags for issue ${issueId}:`, JSON.stringify(event.tags, null, 2));
       this.client.logs.debug(`Event user for issue ${issueId}:`, JSON.stringify(event.user, null, 2));
       this.client.logs.debug(`Event contexts for issue ${issueId}:`, JSON.stringify(event.contexts, null, 2));
@@ -137,23 +167,23 @@ class SentryPoller {
       const activeThreads = await forum.threads.fetchActive();
       
       for (const thread of activeThreads.threads.values()) {
-        if (thread.name.includes(errorId)) {
-          return true;
+        if (thread.name.includes(errorId) && !thread.name.includes('[RESOLVED]')) {
+          return { exists: true, thread: thread };
         }
       }
       
       const archivedThreads = await forum.threads.fetchArchived({ limit: 100 });
       
       for (const thread of archivedThreads.threads.values()) {
-        if (thread.name.includes(errorId)) {
-          return true;
+        if (thread.name.includes(errorId) && !thread.name.includes('[RESOLVED]')) {
+          return { exists: true, thread: thread };
         }
       }
       
-      return false;
+      return { exists: false, thread: null };
     } catch (error) {
       this.client.logs.error('Error checking thread existence:', error.message);
-      return false;
+      return { exists: false, thread: null };
     }
   }
 
@@ -165,6 +195,7 @@ class SentryPoller {
       const lastSeen = new Date(issue.lastSeen);
       const timestamp = Math.floor(lastSeen.getTime() / 1000);
 
+      // Extract tags from the event (not the issue)
       const tags = {};
       if (event.tags) {
         event.tags.forEach(tag => {
@@ -178,19 +209,24 @@ class SentryPoller {
       const channelContext = contexts.channel || {};
       const interactionContext = contexts.interaction || {};
 
+      // Extract user info
       const userId = tags.user_id || event.user?.id || 'Unknown';
       const userName = tags.last_triggered_by || event.user?.username || 'Unknown';
       
+      // Extract guild info
       const guildId = tags.guild_id || guildContext.id || 'Unknown';
       const guildName = tags.guild_name || guildContext.name || 'Unknown Server';
       
+      // Extract channel info
       const channelId = tags.channel_id || channelContext.id || interactionContext.channelId || 'Unknown';
       const channelName = tags.channel_name || channelContext.name || 'unknown-channel';
       
+      // Extract error location info
       const fileName = tags.error_file || errorTracking.file || 'Unknown';
       const errorLine = tags.error_line || errorTracking.errorLine || '??';
       const errorColumn = tags.error_column || errorTracking.errorColumn || '??';
       
+      // Extract interaction info
       const interactionType = tags.interaction_type || interactionContext.type || 'Unknown';
       const commandName = tags.command_name || interactionContext.commandName || errorTracking.command || 'Unknown';
 
@@ -198,6 +234,7 @@ class SentryPoller {
       const errorType = issue.title || 'Unknown Error';
       const errorMessage = issue.culprit || errorTracking.errorMessage || 'No details available';
 
+      // Build stack trace from event
       let stackTrace = errorMessage;
       if (event.entries && event.entries.length > 0) {
         const entry = event.entries[0];
