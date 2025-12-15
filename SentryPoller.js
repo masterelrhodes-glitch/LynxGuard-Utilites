@@ -323,4 +323,4 @@ class SentryPoller {
   }
 }
 
-module.exports = SentryPolle
+module.exports = SentryPoller;
