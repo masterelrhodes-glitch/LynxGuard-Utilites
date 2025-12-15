@@ -86,8 +86,6 @@ class SentryPoller {
             timeAgoStr = `${hoursAgo} hour${hoursAgo !== 1 ? 's' : ''} ago`;
           }
           
-          this.client.logs.info(`**Error ${errorId}** - Guild ${guildName} (${guildId}) - User ${userName} (${userId}) - Time: ${timeAgoStr}`);
-          
           try {
             const userMention = userId !== 'Unknown' ? `<@${userId}>` : userName;
             const timestamp = Math.floor(lastSeen.getTime() / 1000);
@@ -325,4 +323,4 @@ class SentryPoller {
   }
 }
 
-module.exports = SentryPoller;
+module.exports = SentryPolle
