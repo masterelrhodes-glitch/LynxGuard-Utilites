@@ -34,7 +34,7 @@ module.exports = {
       const memberCount = guild.memberCount;
 
       const payload = {
-        content: `Welcome to **${guild.name}**, <@${member.user.id}>! We're an AI moderation bot focused on keeping ER:LC communities safe 24/7.`,
+        content: `Welcome to **${guild.name}**, <@${member.user.id}> We're an AI moderation bot focused on keeping ER:LC communities safe 24/7.`,
         components: [
           {
             type: 1,
@@ -53,11 +53,7 @@ module.exports = {
               {
                 type: 2,
                 style: 5, 
-                label: 'Order',
-                emoji: {
-                  id: '1447758148722233425',
-                  name: 'Logo'
-                },
+                label: 'Information',
                 url: DASHBOARD_LINK
               }
             ]
