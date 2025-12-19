@@ -2,6 +2,8 @@ const {
   EmbedBuilder,
   ContainerBuilder,
   MediaGalleryBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   ButtonStyle,
   MessageFlags
 } = require('discord.js');
@@ -11,6 +13,7 @@ const BUG_FORUM_CHANNEL_ID = '1451067362496479397';
 const BUG_TAG_ID = '1451067468981342320';
 const SENTRY_ORG = 'lynxgaurd';
 const SENTRY_PROJECT = 'node';
+const FIXED_IMAGE_URL = 'https://cdn.discordapp.com/attachments/1451031429105582221/1451378519266426900/image.png?ex=6945f514&is=6944a394&hm=32e874fe64c3374754fad0e874389c785990aff414b192731ede66ed0d51cfac';
 
 module.exports = {
   customID: 'bug',
@@ -25,16 +28,58 @@ module.exports = {
 
       const reportId = randomUUID();
 
+      const uploadedFileUrls = [];
+      for (const [id, attachment] of uploadedFiles) {
+        if (attachment && attachment.url) {
+          uploadedFileUrls.push({
+            url: attachment.url,
+            name: attachment.name || 'Unnamed',
+            id: attachment.id
+          });
+        }
+      }
+
+      try {
+        const db = interaction.client.database.conn.db;
+        
+        if (!db) {
+          throw new Error('Database connection not available');
+        }
+        
+        const bugReport = {
+          reportId: reportId,
+          userId: interaction.user.id,
+          username: interaction.user.username,
+          guildId: interaction.guild.id,
+          guildName: interaction.guild.name,
+          bugDescription: bugDescription,
+          replicateSteps: replicateSteps,
+          errorId: errorId,
+          uploadedFiles: uploadedFileUrls,
+          status: 'pending',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        console.log('Attempting to save bug report:', bugReport);
+        await db.collection('bug_reports').insertOne(bugReport);
+        console.log(`Bug report ${reportId} stored successfully`);
+        interaction.client.logs?.debug(`Bug report ${reportId} stored in database`);
+      } catch (dbError) {
+        console.error('Full database error:', dbError);
+        interaction.client.logs?.error('Error storing bug report in database:', dbError.message);
+      }
+
       const bugForum = await interaction.guild.channels.fetch(BUG_FORUM_CHANNEL_ID);
 
       const user = interaction.user;
       const createdTimestamp = Math.floor(user.createdTimestamp / 1000);
 
-      const mediaGallery = new MediaGalleryBuilder();
+      const userMediaGallery = new MediaGalleryBuilder();
       
       for (const [id, attachment] of uploadedFiles) {
         if (attachment && attachment.url) {
-          mediaGallery.addItems((item) => {
+          userMediaGallery.addItems((item) => {
             const builder = item.setURL(attachment.url);
             if (attachment.name) {
               builder.setDescription(attachment.name);
@@ -43,6 +88,11 @@ module.exports = {
           });
         }
       }
+
+      const embedMediaGallery = new MediaGalleryBuilder();
+      embedMediaGallery.addItems((item) => {
+        return item.setURL(FIXED_IMAGE_URL);
+      });
 
       const container = new ContainerBuilder()
         .setAccentColor(0x37373D)
@@ -58,15 +108,18 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary)
             )
         )
+        .addTextDisplayComponents((textDisplay) =>
+          textDisplay.setContent(`### User Information\n- User: <@${user.id}> \`(${user.id})\`\n- Account creation: <t:${createdTimestamp}:R>`)
+        )
+        .addSeparatorComponents((separator) =>
+          separator.setDivider(true).setSpacing(SeparatorSpacingSize.Large)
+        )
         .addSectionComponents((section) =>
           section
             .addTextDisplayComponents((textDisplay) =>
               textDisplay.setContent(
-                `### User Information\n` +
-                `- User: <@${user.id}> \`(${user.id})\`\n` +
-                `- Account creation: <t:${createdTimestamp}:R>\n\n` +
                 `## Bug Information\n` +
-                `**Claimed bug:** \`\`\`${bugDescription}\`\`\`\n` +
+                `**Claimed bug:**\n\`\`\`${bugDescription}\`\`\`\n` +
                 `**How to replicate:**\n${replicateSteps}\n` +
                 `-# Report ID: ${reportId}`
               )
@@ -80,9 +133,7 @@ module.exports = {
         );
 
       const containerData = container.toJSON();
-      const mediaGalleryData = mediaGallery.toJSON();
       
-      containerData.components.splice(1, 0, mediaGalleryData);
 
       const components = [containerData];
 
@@ -107,6 +158,26 @@ module.exports = {
         },
         appliedTags: [BUG_TAG_ID]
       });
+
+      if (uploadedFileUrls.length > 0) {
+        const photoEmbeds = [];
+        for (const file of uploadedFileUrls) {
+          const embed = new EmbedBuilder()
+            .setImage(file.url)
+            .setColor(0x37373D);
+          
+          if (file.name) {
+            embed.setFooter({ text: file.name });
+          }
+          
+          photoEmbeds.push(embed);
+        }
+
+        await thread.send({
+          content: `**Uploaded Screenshots** (${photoEmbeds.length} image${photoEmbeds.length !== 1 ? 's' : ''})`,
+          embeds: photoEmbeds
+        });
+      }
 
       await interaction.editReply({
         content: 
