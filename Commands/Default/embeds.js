@@ -171,15 +171,15 @@ async function sendInformationEmbed(channel) {
         components: [
           {
             type: 2,
-            style: ButtonStyle.Success,
-            label: 'Apply',
+            style: ButtonStyle.Secondary,
+            label: 'Application',
             custom_id: 'apply_button'
           },
           {
             type: 2,
             style: ButtonStyle.Link,
             label: 'Website',
-            url: 'https://discohook.app/'
+            url: 'https://lynxguard.xyz'
           }
         ]
       }
