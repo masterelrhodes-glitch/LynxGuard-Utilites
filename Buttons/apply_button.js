@@ -99,7 +99,7 @@ module.exports = {
 
       if (!userData || !userData.ruid) {
         return await interaction.editReply({
-          content: 'No Roblox information found! Please verify here: https://www.lynxguard.xyz/verification'
+          content: 'No Roblox information found! Please verify here: https://verify.lynxguard.xyz'
         });
       }
 
@@ -154,7 +154,7 @@ module.exports = {
               type: 2,
               style: 5,
               label: "Re-link Information",
-              url: "https://www.lynxguard.xyz/verification"
+              url: "https://verify.lynxguard.xyz"
             }
           },
           {
