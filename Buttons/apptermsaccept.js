@@ -1,8 +1,43 @@
 const { MessageFlags, ChannelType } = require('discord.js');
 const { applicationStates } = require('../Utils/applicationState');
+const mongoose = require('mongoose');
 
 const APPLICATION_CHANNEL_ID = '1451207579467518042';
 const APPLICATION_TAG_ID = '1451815611419197502';
+
+const applicationSchema = new mongoose.Schema({
+  applicationId: { type: String, required: true, unique: true },
+  threadId: { type: String, required: true },
+  discordUserId: { type: String, required: true },
+  discordUsername: { type: String, required: true },
+  robloxUserId: { type: String, required: true },
+  robloxUsername: { type: String, required: true },
+  status: { type: String, enum: ['not reviewed', 'staged', 'accepted', 'denied'], default: 'not reviewed' },
+  answers: {
+    pastSupport: String,
+    serversWorked: String,
+    discordJsKnowledge: String,
+    question3: String,
+    question4: String,
+    question5: String,
+    question6: String,
+    question7: String
+  },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'applications', timestamps: true });
+
+let applicationConnection = null;
+
+async function getApplicationConnection() {
+  if (!applicationConnection || applicationConnection.readyState === 0) {
+    applicationConnection = await mongoose.createConnection(process.env.MONGO_URI).asPromise();
+  }
+  return applicationConnection;
+}
+
+function generateApplicationId() {
+  return `APP-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+}
 
 module.exports = {
   customID: 'apptermsaccept',
@@ -13,11 +48,10 @@ module.exports = {
     
     console.log('[APP_TERMS_ACCEPT] Button clicked by:', interaction.user.id);
     console.log('[APP_TERMS_ACCEPT] Target userId from args:', userId);
-    console.log('[APP_TERMS_ACCEPT] State found:', !!state);
     
     if (userId !== interaction.user.id) {
       return await interaction.reply({
-        content: ' This is not your application.',
+        content: 'This is not your application.',
         flags: MessageFlags.Ephemeral
       });
     }
@@ -30,9 +64,8 @@ module.exports = {
     }
 
     try {
+      await interaction.deferUpdate();
       await interaction.message.delete().catch(() => {});
-      
-      await interaction.user.send(' <:Tos:1451072625978904587> Terms accepted. Submitting your application...');
 
       console.log('[APP_TERMS_ACCEPT] Fetching guild and channel');
 
@@ -43,7 +76,9 @@ module.exports = {
         throw new Error('Application channel not found');
       }
 
-      console.log('[APP_TERMS_ACCEPT] Creating thread');
+      const applicationId = generateApplicationId();
+
+      console.log('[APP_TERMS_ACCEPT] Generated application ID:', applicationId);
 
       const avatarUrl = state.userData.robloxAvatarUrl || 
         `https://tr.rbxcdn.com/30DAY-AvatarHeadshot-${state.userData.ruid}-Png/150/150/AvatarHeadshot/Png`;
@@ -56,7 +91,7 @@ module.exports = {
             components: [
               {
                 type: 10,
-                content: `# <:file:1451072954426458132> Support Applications\n\n### <:Discord:1451072525454016674>  Account Information\n- Discord User: <@${userId}> \`(${userId})\`\n- Account Made: ${state.accountCreated}\n- Joined Server: ${state.joinedServer}\n<:prestige_roblox:1451802498083061810>  **Roblox Information:**\n- Roblox Username: ${state.userData.robloxUsername || 'Unknown'}\n- Account Made: ${state.userData.robloxAccountCreated || 'Unknown'}\n\n`
+                content: `# <:file:1451072954426458132> Support Applications\n\n### <:Discord:1451072525454016674>  Account Information\n- Discord User: <@${userId}> \`(${userId})\`\n- Account Made: ${state.accountCreated}\n- Joined Server: ${state.joinedServer}\n\n<:prestige_roblox:1451802498083061810>  **Roblox Information:**\n- Roblox Username: ${state.userData.robloxUsername || 'Unknown'}\n- Account Made: ${state.userData.robloxAccountCreated || 'Unknown'}\n-# Application ID: \`${applicationId}\`\n\n`
               }
             ],
             accessory: {
@@ -73,13 +108,13 @@ module.exports = {
                 style: 2,
                 type: 2,
                 label: "DM User",
-                custom_id: `dmuser_${userId}`
+                custom_id: `dmuser:${userId}`
               },
               {
                 style: 4,
                 type: 2,
                 label: "Delete Application",
-                custom_id: `deleteapp_${userId}`
+                custom_id: `deleteapp:${userId}`
               }
             ]
           }
@@ -109,12 +144,14 @@ module.exports = {
                   }
                 ],
                 placeholder: "Stage application",
-                custom_id: `stageapp_${userId}`
+                custom_id: `stageapp:${userId}`
               }
             ]
           }
         ]
       };
+
+      console.log('[APP_TERMS_ACCEPT] Creating thread');
 
       const thread = await applicationChannel.threads.create({
         name: `${interaction.user.username}'s Application`,
@@ -127,10 +164,27 @@ module.exports = {
         reason: 'Support Application Submission'
       });
 
-      console.log('[APP_TERMS_ACCEPT] Thread created:', thread.id);
-      console.log('[APP_TERMS_ACCEPT] Sending confirmation DM');
+      console.log('[APP_TERMS_ACCEPT] Thread created with ID:', thread.id);
 
-      await interaction.user.send(`## <:Logo:1447758148722233425>  Application Submitted\nYour application has been successfully received. Thank you for your interest in joining our support team. Our staff will review your submission, and you will be contacted if you are selected to move forward.`);
+      const conn = await getApplicationConnection();
+      const Application = conn.model('Application', applicationSchema);
+
+      const newApplication = new Application({
+        applicationId: applicationId,
+        threadId: thread.id,
+        discordUserId: userId,
+        discordUsername: interaction.user.username,
+        robloxUserId: state.userData.ruid,
+        robloxUsername: state.userData.robloxUsername || 'Unknown',
+        status: 'not reviewed',
+        answers: state.answers
+      });
+
+      await newApplication.save();
+
+      console.log('[APP_TERMS_ACCEPT] Application saved to database');
+
+      await interaction.user.send(`## <:Logo:1447758148722233425>  Application Submitted\n\nYour application has been successfully received. Thank you for your interest in joining our support team. Our staff will review your submission, and you will be contacted if you are selected to move forward.\n\nApplication ID: \`${applicationId}\``);
 
       applicationStates.delete(userId);
 
@@ -138,6 +192,7 @@ module.exports = {
 
     } catch (error) {
       console.error('[APP_TERMS_ACCEPT] Error submitting application:', error);
+      console.error('[APP_TERMS_ACCEPT] Error stack:', error.stack);
       await interaction.user.send(' An error occurred while submitting your application. Please contact an administrator.');
       applicationStates.delete(userId);
     }

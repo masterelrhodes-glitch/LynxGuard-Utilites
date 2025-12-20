@@ -27,15 +27,15 @@ module.exports = {
       });
     }
 
+    await interaction.deferUpdate();
+
     await interaction.message.delete().catch(() => {});
-    
-    await interaction.user.send(' <a:Materialloading:1448102835148296202> **Starting** application process');
 
     state.stage = 'question1';
     applicationStates.set(userId, state);
 
     console.log('[APP_CONTINUE] Asking first question');
 
-    await interaction.user.send('Have you worked in any past servers as support (Yes or No)?');
+    await interaction.user.send('**1.** Have you worked in any past servers as support (Yes or No)?');
   }
 };

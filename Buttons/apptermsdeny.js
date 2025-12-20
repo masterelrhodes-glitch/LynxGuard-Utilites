@@ -21,7 +21,11 @@ module.exports = {
     
     await interaction.message.delete().catch(() => {});
     
-    await interaction.user.send('<a:Materialloading:1448102835148296202>  **Canceling** application.');
+    const cancelingMsg = await interaction.user.send('<a:Materialloading:1448102835148296202>  **Canceling** application.');
+    
+    setTimeout(async () => {
+      await cancelingMsg.edit('<:trash:1451073117211332628> Application **canceled**').catch(() => {});
+    }, 3000);
     
     console.log('[APP_TERMS_DENY] Application cancelled');
   }

@@ -3,12 +3,20 @@ const mongoose = require('mongoose');
 const https = require('https');
 
 let verificationConnection = null;
+let applicationConnection = null;
 
 async function getVerificationConnection() {
   if (!verificationConnection || verificationConnection.readyState === 0) {
     verificationConnection = await mongoose.createConnection(process.env.MONGO_URI2).asPromise();
   }
   return verificationConnection;
+}
+
+async function getApplicationConnection() {
+  if (!applicationConnection || applicationConnection.readyState === 0) {
+    applicationConnection = await mongoose.createConnection(process.env.MONGO_URI).asPromise();
+  }
+  return applicationConnection;
 }
 
 const userSchema = new mongoose.Schema({
@@ -20,7 +28,27 @@ const userSchema = new mongoose.Schema({
   verifiedAt: { type: Date, default: Date.now }
 }, { collection: 'verifications' });
 
-const SUPPORT_ROLE_ID = '1451816560804102244';
+const applicationSchema = new mongoose.Schema({
+  applicationId: { type: String, required: true, unique: true },
+  discordUserId: { type: String, required: true },
+  discordUsername: { type: String, required: true },
+  robloxUserId: { type: String, required: true },
+  robloxUsername: { type: String, required: true },
+  status: { type: String, enum: ['not reviewed', 'staged', 'accepted', 'denied'], default: 'not reviewed' },
+  answers: {
+    pastSupport: String,
+    serversWorked: String,
+    discordJsKnowledge: String,
+    question3: String,
+    question4: String,
+    question5: String,
+    question6: String,
+    question7: String
+  },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'applications', timestamps: true });
+
+const SUPPORT_ROLE_ID = '1448100092358823966';
 
 const { applicationStates } = require('../Utils/applicationState');
 
@@ -53,61 +81,56 @@ module.exports = {
   customID: 'apply_button',
   async execute(interaction) {
     try {
-      console.log('[APPLICATION] Button clicked by:', interaction.user.id);
-
       if (interaction.replied || interaction.deferred) {
-        console.log('[APPLICATION] Interaction already acknowledged, skipping');
         return;
       }
 
+      await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
       if (interaction.member.roles.cache.has(SUPPORT_ROLE_ID)) {
-        console.log('[APPLICATION] User already has support role');
-        return await interaction.reply({
-          content: 'You already have the support role.',
-          flags: MessageFlags.Ephemeral
+        return await interaction.editReply({
+          content: 'You already have the support role.'
         });
       }
 
-      console.log('[APPLICATION] Connecting to verification database...');
       const conn = await getVerificationConnection();
-      console.log('[APPLICATION] Connection state:', conn.readyState);
-      
       const User = conn.model('verification', userSchema);
-
-      console.log('[APPLICATION] Searching for user with duid:', interaction.user.id);
       const userData = await User.findOne({ duid: interaction.user.id });
-      
-      console.log('[APPLICATION] User data found:', userData ? 'YES' : 'NO');
-      if (userData) {
-        console.log('[APPLICATION] User data:', {
-          duid: userData.duid,
-          ruid: userData.ruid,
-          robloxUsername: userData.robloxUsername,
-          hasRuid: !!userData.ruid
-        });
-      }
 
       if (!userData || !userData.ruid) {
-        console.log('[APPLICATION] User not verified - no ruid found');
-        return await interaction.reply({
-          content: ':warnings: No Roblox information found! Please **verify** [here.](https://www.lynxguard.xyz/verification)',
-          flags: MessageFlags.Ephemeral
+        return await interaction.editReply({
+          content: 'No Roblox information found! Please verify here: https://www.lynxguard.xyz/verification'
         });
       }
 
-      console.log('[APPLICATION] User verified, fetching Roblox info...');
+      if (applicationStates.has(interaction.user.id)) {
+        return await interaction.editReply({
+          content: 'You already have an active application in progress. Please complete or cancel it before starting a new one.'
+        });
+      }
 
-      const robloxInfo = await fetchRobloxUserInfo(userData.ruid);
-      console.log('[APPLICATION] Roblox info fetched:', robloxInfo);
+      const appConn = await getApplicationConnection();
+      const Application = appConn.model('Application', applicationSchema);
 
-      console.log('[APPLICATION] Sending initial reply...');
-
-      await interaction.reply({
-        content: '<:support_notify:1451073086651633756>  An application for **LynxGuard Support** has been sent to your DM\'s.',
-        flags: MessageFlags.Ephemeral
+      const existingApplication = await Application.findOne({
+        $or: [
+          { discordUserId: interaction.user.id },
+          { robloxUserId: userData.ruid }
+        ],
+        status: { $in: ['not reviewed', 'staged'] }
       });
 
-      console.log('[APPLICATION] Reply sent, now sending DM...');
+      if (existingApplication) {
+        return await interaction.editReply({
+          content: `You already have a pending application (ID: \`${existingApplication.applicationId}\`). Please wait for it to be reviewed before submitting a new one.`
+        });
+      }
+
+      const robloxInfo = await fetchRobloxUserInfo(userData.ruid);
+
+      await interaction.editReply({
+        content: 'An application for LynxGuard Support has been sent to your DMs.'
+      });
 
       const dmChannel = await interaction.user.createDM();
       
@@ -124,7 +147,7 @@ module.exports = {
             components: [
               {
                 type: 10,
-                content: `# <:file:1451072954426458132> Support Application\n\n### <:Discord:1451072525454016674>  Account Information\n- Discord User: <@${interaction.user.id}> \`(${interaction.user.id})\`\n- Account Made: ${accountCreated}\n- Joined Server: ${joinedServer}\n\n<:prestige_roblox:1451802498083061810>  **Roblox Information:**\n- Roblox Username: ${robloxInfo.username}\n- Account Made: ${robloxInfo.created}\n\n`
+                content: `# Support Application\n\nAccount Information\n- Discord User: <@${interaction.user.id}> \`(${interaction.user.id})\`\n- Account Made: ${accountCreated}\n- Joined Server: ${joinedServer}\n\nRoblox Information:\n- Roblox Username: ${robloxInfo.username}\n- Account Made: ${robloxInfo.created}\n\n`
               }
             ],
             accessory: {
@@ -159,8 +182,6 @@ module.exports = {
         flags: MessageFlags.IsComponentsV2
       });
 
-      console.log('[APPLICATION] DM sent successfully');
-
       applicationStates.set(interaction.user.id, {
         stage: 'initial',
         userData: {
@@ -175,17 +196,16 @@ module.exports = {
         guildId: interaction.guildId
       });
 
-      console.log('[APPLICATION] Application state initialized');
-
     } catch (error) {
-      console.error('[APPLICATION] Error handling application button:', error);
-      console.error('[APPLICATION] Error stack:', error.stack);
-      
       if (error.code === 50007) {
         if (!interaction.replied && !interaction.deferred) {
           return await interaction.reply({
-            content: ' I cannot send you a DM. Please enable DMs from server members and try again.',
+            content: 'I cannot send you a DM. Please enable DMs from server members and try again.',
             flags: MessageFlags.Ephemeral
+          });
+        } else {
+          return await interaction.editReply({
+            content: 'I cannot send you a DM. Please enable DMs from server members and try again.'
           });
         }
       }
@@ -194,6 +214,10 @@ module.exports = {
         await interaction.reply({
           content: `An error occurred: ${error.message}`,
           flags: MessageFlags.Ephemeral
+        }).catch(() => {});
+      } else {
+        await interaction.editReply({
+          content: `An error occurred: ${error.message}`
         }).catch(() => {});
       }
     }

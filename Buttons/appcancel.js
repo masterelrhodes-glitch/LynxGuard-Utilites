@@ -13,7 +13,7 @@ module.exports = {
     
     if (userId !== interaction.user.id) {
       return await interaction.reply({
-        content: ' This is not your application.',
+        content: 'This is not your application.',
         flags: MessageFlags.Ephemeral
       });
     }
@@ -22,7 +22,11 @@ module.exports = {
     
     await interaction.message.delete().catch(() => {});
     
-    await interaction.user.send('<a:Materialloading:1448102835148296202>  **Canceling** application.');
+    const cancelingMsg = await interaction.user.send('<a:Materialloading:1448102835148296202>  **Canceling** application.');
+    
+    setTimeout(async () => {
+      await cancelingMsg.edit('<:trash:1451073117211332628> Application **canceled**').catch(() => {});
+    }, 3000);
     
     console.log('[APP_CANCEL] Application cancelled');
   }
