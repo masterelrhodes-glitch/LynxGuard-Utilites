@@ -12,6 +12,7 @@ DEV_GUILD_ID=
 
 # ── Database / Retry Strategy ───────────────────────────────────────
 MONGO_URI=
+MONGO_URI2=
 DB_MAX_IMMEDIATE_RETRIES=5
 DB_SLOW_RETRY_MS=60000
 DB_BACKOFF_BASE=1000
@@ -33,7 +34,7 @@ SENTRY_API_TOKEN=
 `;
   fs.writeFileSync(ENV_PATH, TEMPLATE, { flag: "wx" });
   console.error(
-    "[SETUP] Created .env. Fill it out (at least TOKEN + APP_ID + SENTRY_API_TOKEN) then re-run."
+    "[SETUP] Created .env. Fill it out (at least TOKEN + APP_ID + MONGO_URI + MONGO_URI2 + SENTRY_API_TOKEN) then re-run."
   );
   process.exit(1);
 }
@@ -85,7 +86,7 @@ const CheckIntents = require("./Utils/CheckIntents");
 const setupDatabase = require("./Database/connect");
 const initProcessHandlers = require("./Utils/ProcessHandler");
 
-const { Client } = require("discord.js");
+const { Client, Partials } = require("discord.js");
 const Debounce = require("./Utils/Debounce");
 const { RESPONSE_CACHE } = require("./Events/InteractionHandler");
 const { resolve } = require("node:path");
@@ -98,7 +99,14 @@ const preloadTime = Number(preloadEnd - preloadStart) / 1e6;
 Log.custom(`Preload time: ${~~preloadTime}ms`, 0x7946ff);
 
 const client = new Client({
-  intents: ["Guilds", "GuildMessages", "MessageContent"],
+  intents: [
+    "Guilds", 
+    "GuildMessages", 
+    "MessageContent", 
+    "DirectMessages",
+    "GuildMembers"
+  ],
+  partials: [Partials.Channel, Partials.Message]
 });
 
 client.config = config;
