@@ -12,7 +12,7 @@ const applicationSchema = new mongoose.Schema({
   discordUsername: { type: String, required: true },
   robloxUserId: { type: String, required: true },
   robloxUsername: { type: String, required: true },
-  status: { type: String, enum: ['not reviewed', 'staged', 'accepted', 'denied'], default: 'not reviewed' },
+  status: { type: String, enum: ['not reviewed', 'staged accepted', 'staged denied', 'accepted', 'denied'], default: 'not reviewed' },
   answers: {
     pastSupport: String,
     serversWorked: String,
@@ -144,6 +144,10 @@ module.exports = {
                   {
                     label: "Deny",
                     value: "deny"
+                  },
+                  {
+                    label: "Deny & Blacklist",
+                    value: "blacklist"
                   }
                 ],
                 placeholder: "Stage application",

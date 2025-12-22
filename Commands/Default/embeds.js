@@ -26,7 +26,7 @@ const embedSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-const Embed = mongoose.model('Embed', embedSchema);
+const Embed = mongoose.models.Embed || mongoose.model('Embed', embedSchema);
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -65,14 +65,23 @@ module.exports = {
 
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
+      await connectDB();
+
+      // Delete all old entries of this embed type in this guild
+      const deleteResult = await Embed.deleteMany({
+        guildId: interaction.guildId,
+        embedType: embedType
+      });
+
+      console.log(`[EMBEDS] Deleted ${deleteResult.deletedCount} old ${embedType} embed entries`);
+
       let sentMessage;
 
       if (embedType === 'information') {
         sentMessage = await sendInformationEmbed(targetChannel);
       }
-
-      await connectDB();
       
+      // Create new entry for the newly sent embed
       await Embed.create({
         messageId: sentMessage.id,
         channelId: targetChannel.id,
@@ -81,8 +90,10 @@ module.exports = {
         createdBy: interaction.user.id
       });
 
+      console.log(`[EMBEDS] Created new ${embedType} embed entry for message ${sentMessage.id}`);
+
       await interaction.editReply({
-        content: `Successfully sent the ${embedType} embed to ${targetChannel}!\nMessage ID: \`${sentMessage.id}\``,
+        content: `Successfully sent the ${embedType} embed to ${targetChannel}!\nMessage ID: \`${sentMessage.id}\`${deleteResult.deletedCount > 0 ? `\n*Deleted ${deleteResult.deletedCount} old ${embedType} embed(s)*` : ''}`,
         flags: MessageFlags.Ephemeral
       });
 

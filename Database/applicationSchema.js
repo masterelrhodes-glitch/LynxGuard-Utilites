@@ -28,7 +28,7 @@ const applicationSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['not reviewed', 'staged', 'accepted', 'denied'],
+    enum: ['not reviewed', 'staged accepted', 'staged denied', 'accepted', 'denied'],
     default: 'not reviewed'
   },
   answers: {
