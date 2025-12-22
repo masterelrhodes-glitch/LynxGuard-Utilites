@@ -123,6 +123,8 @@ class SentryPoller {
           continue;
         }
         
+        this.client.logs.info(` Attempting to create thread for error ${errorId}`);
+        
         await this.createErrorThread(issue, latestEvent, errorId);
         this.client.logs.info(`Created new thread for **Error ${errorId}** - Guild ${guildName} (${guildId}) - User ${userName} (${userId})`);
       }
@@ -210,8 +212,24 @@ class SentryPoller {
 
   async createErrorThread(issue, event, errorId) {
     try {
+      this.client.logs.info(`🔧 [Thread Creation] Starting for error ${errorId}`);
+      
+      this.client.logs.debug(`[Thread Creation] Fetching guild ${this.GUILD_ID}`);
       const guild = await this.client.guilds.fetch(this.GUILD_ID);
+      this.client.logs.debug(`[Thread Creation] Guild fetched: ${guild.name}`);
+      
+      this.client.logs.debug(`[Thread Creation] Fetching forum channel ${this.FORUM_CHANNEL_ID}`);
       const forum = await guild.channels.fetch(this.FORUM_CHANNEL_ID);
+      this.client.logs.debug(`[Thread Creation] Forum fetched: ${forum.name} (Type: ${forum.type})`);
+      
+      const botPermissions = forum.permissionsFor(this.client.user);
+      this.client.logs.debug(`[Thread Creation] Bot permissions in forum:`, {
+        VIEW_CHANNEL: botPermissions.has('ViewChannel'),
+        SEND_MESSAGES: botPermissions.has('SendMessages'),
+        CREATE_PUBLIC_THREADS: botPermissions.has('CreatePublicThreads'),
+        SEND_MESSAGES_IN_THREADS: botPermissions.has('SendMessagesInThreads'),
+        MANAGE_THREADS: botPermissions.has('ManageThreads')
+      });
 
       const lastSeen = new Date(issue.lastSeen);
       const timestamp = Math.floor(lastSeen.getTime() / 1000);
@@ -267,6 +285,7 @@ class SentryPoller {
       const channelMention = channelId !== 'Unknown' ? `<#${channelId}>` : channelName;
       const lineInfo = errorLine !== '??' ? `${errorLine}${errorColumn !== '??' ? `:${errorColumn}` : ''}` : '??';
 
+      this.client.logs.debug(`[Thread Creation] Building embed`);
       const embed = new EmbedBuilder()
         .setColor(0xFF4949)
         .setTitle(`Error \`${errorId}\``)
@@ -287,6 +306,7 @@ class SentryPoller {
         .setTimestamp()
         .setFooter({ text: `Error ID: ${errorId}` });
 
+      this.client.logs.debug(`[Thread Creation] Building select menu`);
       const selectMenu = new StringSelectMenuBuilder()
         .setCustomId(`error_action_${errorId}`)
         .setPlaceholder('Select an action')
@@ -305,7 +325,11 @@ class SentryPoller {
 
       const row = new ActionRowBuilder().addComponents(selectMenu);
 
-      await forum.threads.create({
+      this.client.logs.debug(`[Thread Creation] Creating thread with name: "Error ${errorId}"`);
+      this.client.logs.debug(`[Thread Creation] Applied tags: [${this.UNRESOLVED_TAG_ID}]`);
+      this.client.logs.debug(`[Thread Creation] Ping role: ${this.PING_ROLE_ID}`);
+
+      const threadData = {
         name: `Error ${errorId}`,
         message: {
           content: `<@&${this.PING_ROLE_ID}>`,
@@ -313,12 +337,32 @@ class SentryPoller {
           components: [row]
         },
         appliedTags: [this.UNRESOLVED_TAG_ID]
-      });
+      };
 
-      this.client.logs.success(`Created thread for error ${errorId}`);
+      this.client.logs.debug(`[Thread Creation] Thread data prepared:`, JSON.stringify({
+        name: threadData.name,
+        appliedTags: threadData.appliedTags,
+        hasEmbed: !!threadData.message.embeds[0],
+        hasComponents: !!threadData.message.components[0]
+      }, null, 2));
+
+      const thread = await forum.threads.create(threadData);
+      
+      this.client.logs.success(`[Thread Creation] Successfully created thread: ${thread.name} (${thread.id})`);
+      this.client.logs.debug(`[Thread Creation] Thread URL: ${thread.url}`);
+
     } catch (error) {
-      this.client.logs.error('Error creating thread:', error.message);
-      this.client.logs.error('Stack trace:', error.stack);
+      this.client.logs.error(`[Thread Creation] FAILED for error ${errorId}`);
+      this.client.logs.error(`[Thread Creation] Error type: ${error.name}`);
+      this.client.logs.error(`[Thread Creation] Error message: ${error.message}`);
+      this.client.logs.error(`[Thread Creation] Error code: ${error.code}`);
+      this.client.logs.error(`[Thread Creation] Full stack trace:`, error.stack);
+      
+      if (error.rawError) {
+        this.client.logs.error(`[Thread Creation] Raw API error:`, JSON.stringify(error.rawError, null, 2));
+      }
+      
+      throw error;
     }
   }
 }

@@ -23,6 +23,9 @@ const applicationSchema = new mongoose.Schema({
     question6: String,
     question7: String
   },
+  applicationReviewer: { type: String, default: null },
+  dateReviewed: { type: Date, default: null },
+  applicationNotes: { type: String, default: null },
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'applications', timestamps: true });
 
@@ -108,13 +111,13 @@ module.exports = {
                 style: 2,
                 type: 2,
                 label: "DM User",
-                custom_id: `dmuser:${userId}`
+                custom_id: `dmuser_${userId}`
               },
               {
                 style: 4,
                 type: 2,
                 label: "Delete Application",
-                custom_id: `deleteapp:${userId}`
+                custom_id: `deleteapp_${userId}`
               }
             ]
           }
@@ -144,7 +147,7 @@ module.exports = {
                   }
                 ],
                 placeholder: "Stage application",
-                custom_id: `stageapp:${userId}`
+                custom_id: `stageapp_${userId}`
               }
             ]
           }
@@ -193,7 +196,7 @@ module.exports = {
     } catch (error) {
       console.error('[APP_TERMS_ACCEPT] Error submitting application:', error);
       console.error('[APP_TERMS_ACCEPT] Error stack:', error.stack);
-      await interaction.user.send(' An error occurred while submitting your application. Please contact an administrator.');
+      await interaction.user.send('An error occurred while submitting your application. Please contact an administrator.');
       applicationStates.delete(userId);
     }
   }

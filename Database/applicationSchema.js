@@ -41,6 +41,18 @@ const applicationSchema = new mongoose.Schema({
     question6: String,
     question7: String
   },
+  applicationReviewer: {
+    type: String,
+    default: null
+  },
+  dateReviewed: {
+    type: Date,
+    default: null
+  },
+  applicationNotes: {
+    type: String,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
