@@ -48,6 +48,15 @@ const applicationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'applications', timestamps: true });
 
+const blacklistSchema = new mongoose.Schema({
+  discordUserId: { type: String, required: true, unique: true },
+  discordUsername: { type: String, required: true },
+  blacklistedBy: { type: String, required: true },
+  blacklistedByUsername: { type: String, required: true },
+  reason: { type: String, default: 'No reason provided' },
+  blacklistedAt: { type: Date, default: Date.now }
+}, { collection: 'blacklist', timestamps: true });
+
 const SUPPORT_ROLE_ID = '1448100092358823966';
 
 const { applicationStates } = require('../Utils/applicationState');
@@ -93,6 +102,17 @@ module.exports = {
         });
       }
 
+      const appConn = await getApplicationConnection();
+      const Blacklist = appConn.model('Blacklist', blacklistSchema);
+
+      const blacklistEntry = await Blacklist.findOne({ discordUserId: interaction.user.id });
+
+      if (blacklistEntry) {
+        return await interaction.editReply({
+          content: `You are blacklisted from applying.\n**Reason:** ${blacklistEntry.reason}`
+        });
+      }
+
       const conn = await getVerificationConnection();
       const User = conn.model('verification', userSchema);
       const userData = await User.findOne({ duid: interaction.user.id });
@@ -109,7 +129,6 @@ module.exports = {
         });
       }
 
-      const appConn = await getApplicationConnection();
       const Application = appConn.model('Application', applicationSchema);
 
       const existingApplication = await Application.findOne({
