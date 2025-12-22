@@ -144,6 +144,7 @@ async function sendInformationEmbed(channel) {
             .setCustomId('assistance_button')
             .setLabel('Assistance')
             .setStyle(ButtonStyle.Primary)
+            .setDisabled(true)
         )
     )
     .addSeparatorComponents((separator) =>
@@ -195,7 +196,7 @@ async function sendInformationEmbed(channel) {
         ]
       }
     ],
-    flags: MessageFlags.IsComponentsV2
+    flags: MessageFlags.IsComponentsV2 | MessageFlags.SuppressNotifications
   });
 
   return message;
