@@ -17,12 +17,7 @@ module.exports = {
     const name = args.shift().toLowerCase();
     const command = client.messages.get(name);
     if (!command) {
-      client.logs.error(`Command not found: ${name}`);
-      return await message
-        .reply(
-          `There was an error while executing this command!\n\`\`\`Command not found\`\`\``
-        )
-        .catch(() => {});
+      return;
     }
     try {
       if (command.cooldown)
