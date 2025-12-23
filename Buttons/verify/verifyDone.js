@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const UserModel = require('../../Database/UserModel');
 const axios = require('axios');
 
-const logChannelId = '1446693028998942842';
+const logChannelId = '1449961040010940426';
 const targetGuildId = '1446351663622389770';
 const verifiedRoleId = '1448097434768248924';
 const removeRoleId = '1452932765065678880';
