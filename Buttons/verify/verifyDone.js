@@ -5,6 +5,7 @@ const axios = require('axios');
 const logChannelId = '1446693028998942842';
 const targetGuildId = '1446351663622389770';
 const verifiedRoleId = '1448097434768248924';
+const removeRoleId = '1452932765065678880';
 
 module.exports = {
   defer: true,
@@ -77,6 +78,7 @@ module.exports = {
       const member = await interaction.guild.members.fetch(interaction.user.id).catch(() => null);
       if (member) {
         await member.roles.add(verifiedRoleId).catch(err => console.error('Failed to add verified role:', err));
+        await member.roles.remove(removeRoleId).catch(err => console.error('Failed to remove role:', err));
       }
     }
 
