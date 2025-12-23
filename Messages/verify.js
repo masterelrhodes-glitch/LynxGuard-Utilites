@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 
-const channelId = '1446693028998942842';
+const channelId = '1450329389396136067';
 const requiredRoleId = '1446352448037064755';
 
 module.exports = {
