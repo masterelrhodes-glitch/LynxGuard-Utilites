@@ -189,7 +189,7 @@ module.exports = {
 
       const discordAccountAge = `<t:${Math.floor(interaction.user.createdTimestamp / 1000)}:R>`;
 
-      const pingMessage = await ticketChannel.send(`<@&1445599642505973796>`);
+      const pingMessage = await ticketChannel.send(`<@&1448100092358823966>`);
       await pingMessage.delete();
 
       console.log('[TICKET] Building embed...');
