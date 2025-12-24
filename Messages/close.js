@@ -1,6 +1,5 @@
 const { MessageFlags } = require('discord.js');
 const discordTranscripts = require('discord-html-transcripts');
-const { Octokit } = require('@octokit/rest');
 const mongoose = require('mongoose');
 
 const GITHUB_OWNER = 'masterelrhodes-glitch';
@@ -9,7 +8,17 @@ const VERCEL_URL = 'https://transcripts.lynxguard.xyz';
 const LOG_CHANNEL_ID = '1451772329355902977';
 const ALLOWED_ROLES = ['1448100092358823966', '1448906996421099561', '1448097004470145095', '1448096870508400640', '1448098877327806638'];
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+let Octokit;
+let octokit;
+
+async function initOctokit() {
+  if (!Octokit) {
+    const octokitModule = await import('@octokit/rest');
+    Octokit = octokitModule.Octokit;
+    octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+  }
+  return octokit;
+}
 
 const ticketSchema = new mongoose.Schema({
   channelId: { type: String, required: true },
@@ -28,8 +37,9 @@ const ticketSchema = new mongoose.Schema({
 const Ticket = mongoose.models.Ticket || mongoose.model('Ticket', ticketSchema);
 
 async function uploadToGitHub(fileName, fileContent) {
+  const octokitInstance = await initOctokit();
   const content = fileContent.toString('base64');
-  await octokit.repos.createOrUpdateFileContents({
+  await octokitInstance.repos.createOrUpdateFileContents({
     owner: GITHUB_OWNER,
     repo: GITHUB_REPO,
     path: `public/${fileName}`,
@@ -40,12 +50,19 @@ async function uploadToGitHub(fileName, fileContent) {
   console.log(`Uploaded ${fileName} to GitHub`);
 }
 
+const closingChannels = new Set();
+
 module.exports = {
   name: 'close',
   description: 'Close a ticket and generate transcript',
   roles: ALLOWED_ROLES,
   
   async execute(message, client, args) {
+    if (closingChannels.has(message.channel.id)) {
+      console.log(`[CLOSE] Channel ${message.channel.id} is already being closed, ignoring duplicate request`);
+      return;
+    }
+
     const hasRole = message.member.roles.cache.some(role => ALLOWED_ROLES.includes(role.id));
     if (!hasRole) {
       return await message.reply('You do not have permission to use this command.');
@@ -55,6 +72,8 @@ module.exports = {
     if (!ticket) {
       return await message.reply('This command can only be used in ticket channels.');
     }
+
+    closingChannels.add(message.channel.id);
 
     const closureReason = args.join(' ') || 'No reason provided';
     const ticketOwner = await client.users.fetch(ticket.userId);
@@ -156,8 +175,14 @@ module.exports = {
 
     await message.channel.send('This ticket will be deleted in 5 seconds...');
     await new Promise(resolve => setTimeout(resolve, 5000));
-    await message.channel.delete();
-
-    console.log(`Ticket ${ticket.ticketId} closed successfully`);
+    
+    try {
+      await message.channel.delete();
+      console.log(`Ticket ${ticket.ticketId} closed successfully`);
+    } catch (error) {
+      console.error(`Error deleting channel: ${error.message}`);
+    } finally {
+      closingChannels.delete(message.channel.id);
+    }
   }
 };
