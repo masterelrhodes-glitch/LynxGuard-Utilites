@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const GITHUB_OWNER = 'masterelrhodes-glitch';
 const GITHUB_REPO = 'lynxguard-transcripts';
 const VERCEL_URL = 'https://transcripts.lynxguard.xyz';
-const LOG_CHANNEL_ID = '1451772329355902977';
+const LOG_CHANNEL_ID = '1453241278421532855';
 const ALLOWED_ROLES = ['1448100092358823966', '1448906996421099561', '1448097004470145095', '1448096870508400640', '1448098877327806638'];
 
 let Octokit;
