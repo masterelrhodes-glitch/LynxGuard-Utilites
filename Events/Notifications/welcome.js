@@ -2,7 +2,7 @@ const { Events } = require('discord.js');
 
 const GUILD_ID = '1446351663622389770';
 const WELCOME_CHANNEL_ID = '1447750142164733993'; 
-const WELCOME_ROLE_ID = '1448097434768248924';    
+const WELCOME_ROLE_ID = '1452932765065678880';    
 const DASHBOARD_LINK = 'https://discord.com/channels/1446351663622389770/1447749004183081042'; 
 
 module.exports = {
