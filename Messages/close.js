@@ -55,17 +55,16 @@ const closingChannels = new Set();
 module.exports = {
   name: 'close',
   description: 'Close a ticket and generate transcript',
-  roles: ALLOWED_ROLES,
   
   async execute(message, client, args) {
-    if (closingChannels.has(message.channel.id)) {
-      console.log(`[CLOSE] Channel ${message.channel.id} is already being closed, ignoring duplicate request`);
-      return;
-    }
-
     const hasRole = message.member.roles.cache.some(role => ALLOWED_ROLES.includes(role.id));
     if (!hasRole) {
       return await message.reply('You do not have permission to use this command.');
+    }
+
+    if (closingChannels.has(message.channel.id)) {
+      console.log(`[CLOSE] Channel ${message.channel.id} is already being closed, ignoring duplicate request`);
+      return;
     }
 
     const ticket = await Ticket.findOne({ channelId: message.channel.id });
@@ -134,17 +133,11 @@ module.exports = {
     };
 
     const logChannel = message.guild.channels.cache.get(LOG_CHANNEL_ID);
-    console.log('Log channel ID:', LOG_CHANNEL_ID);
-    console.log('Log channel found:', !!logChannel);
     if (logChannel) {
-      console.log('Sending to log channel...');
       await logChannel.send({
         flags: MessageFlags.IsComponentsV2,
         components: [logContainer]
       });
-      console.log('Log message sent successfully');
-    } else {
-      console.log('Log channel not found!');
     }
 
     try {
@@ -166,7 +159,7 @@ module.exports = {
     try {
       const member = await message.guild.members.fetch(ticket.userId);
       const supportRole = '1448100092358223966';
-      if (member.roles.cache.has(supportRole)) {
+      if (member && member.roles.cache.has(supportRole)) {
         await member.roles.remove(supportRole);
       }
     } catch (error) {

@@ -168,7 +168,7 @@ module.exports = {
       const guild = channel.guild;
       const member = await guild.members.fetch(ticket.userId);
       const supportRole = '1448100092358223966';
-      if (member.roles.cache.has(supportRole)) {
+      if (member && member.roles.cache.has(supportRole)) {
         await member.roles.remove(supportRole);
       }
     } catch (error) {

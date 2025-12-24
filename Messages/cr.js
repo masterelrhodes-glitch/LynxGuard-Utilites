@@ -22,7 +22,6 @@ const Ticket = mongoose.models.Ticket || mongoose.model('Ticket', ticketSchema);
 module.exports = {
   name: 'cr',
   description: 'Request to close a ticket',
-  roles: ALLOWED_ROLES,
   
   async execute(message, client, args) {
     const hasRole = message.member.roles.cache.some(role => ALLOWED_ROLES.includes(role.id));
