@@ -4,9 +4,13 @@ const { handleDMReply } = require('../Utils/dmReplyHandler');
 module.exports = {
   name: 'messageCreate',
   async execute(client, message) {
+    if (message.author.bot) return;
+    
+
     const wasHandled = await handleDMReply(message, client);
     if (wasHandled) return;
-
+    
+ 
     await handleApplicationMessage(message);
   }
 };

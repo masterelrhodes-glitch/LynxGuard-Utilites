@@ -144,7 +144,7 @@ async function sendInformationEmbed(channel) {
             .setCustomId('assistance_button')
             .setLabel('Assistance')
             .setStyle(ButtonStyle.Primary)
-            .setDisabled(true)
+            // Button is now enabled
         )
     )
     .addSeparatorComponents((separator) =>
