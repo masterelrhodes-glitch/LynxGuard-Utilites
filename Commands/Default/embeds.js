@@ -119,7 +119,7 @@ async function sendInformationEmbed(channel) {
     (item) =>
       item
         .setDescription('LynxGuard Banner')
-        .setURL('https://cdn.discordapp.com/banners/1444878574984237066/ee95693357d252e0dff2e9393e627046.webp?size=1024')
+        .setURL('https://cdn.discordapp.com/attachments/1446353354468098140/1453609271744004097/image.png?ex=694e12a1&is=694cc121&hm=5e6b4044da7e61fbf2151e9e618a3bd529aed0c7bd0346fda681a9427aee7713&animated=true')
   );
 
   const container = new ContainerBuilder()
@@ -144,7 +144,6 @@ async function sendInformationEmbed(channel) {
             .setCustomId('assistance_button')
             .setLabel('Assistance')
             .setStyle(ButtonStyle.Primary)
-            // Button is now enabled
         )
     )
     .addSeparatorComponents((separator) =>
