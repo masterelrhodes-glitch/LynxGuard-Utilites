@@ -13,7 +13,6 @@ module.exports = {
         .addChannelTypes(ChannelType.GuildText)
         .setRequired(false)
     ),
-
   async execute(interaction) {
     if (!interaction.member.roles.cache.has(ADMIN_ROLE_ID)) {
       return await interaction.reply({
@@ -21,24 +20,23 @@ module.exports = {
         flags: 64
       });
     }
-
+    
     const channel = interaction.options.getChannel('channel');
     
     const modal = new ModalBuilder()
       .setCustomId(`embed_send_${channel?.id || 'current'}`)
       .setTitle('Send Embed');
-
+    
     const contentInput = new TextInputBuilder()
       .setCustomId('embed_content')
-      .setLabel('Message Contents (JSON Text)')
+      .setLabel('Message Contents (JSON)')
       .setStyle(TextInputStyle.Paragraph)
-      .setPlaceholder('Enter your embed JSON here...')
+      .setPlaceholder('Enter your embed/component JSON here...')
       .setRequired(true);
-
+    
     const contentRow = new ActionRowBuilder().addComponents(contentInput);
-
     modal.addComponents(contentRow);
-
+    
     await interaction.showModal(modal);
   }
 };
