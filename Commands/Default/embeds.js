@@ -118,55 +118,75 @@ async function sendInformationEmbed(channel) {
   const mediaGallery = new MediaGalleryBuilder().addItems(
     (item) =>
       item
-        .setDescription('LynxGuard Banner')
-        .setURL('https://cdn.discordapp.com/attachments/1446353354468098140/1453609271744004097/image.png?ex=694e12a1&is=694cc121&hm=5e6b4044da7e61fbf2151e9e618a3bd529aed0c7bd0346fda681a9427aee7713&animated=true')
+        .setDescription('LynxGuard Information Banner')
+        .setURL('https://cdn.discordapp.com/attachments/1446353354468098140/1454190733849399448/Information_Banner.png?ex=69503028&is=694edea8&hm=b4440b6cc44aac0de1612d33c24578fc1214f2c7cb3873ab7c525c05fdca0cd9&animated=true')
   );
 
   const container = new ContainerBuilder()
     .setAccentColor(0x37373D)
     .addTextDisplayComponents((textDisplay) =>
+      textDisplay.setContent('## System Overview')
+    )
+    .addTextDisplayComponents((textDisplay) =>
       textDisplay.setContent(
-        '<:Logo:1447758148722233425>   **LynxGuard** is an AI-powered moderation system built for ERLC servers that assists staff, enforces rules, and keeps roleplay environments running smoothly. Through API integrations and trained AI systems, it analyzes player behavior to identify patterns commonly associated with rule violations, helping moderators make faster, more consistent decisions without replacing human oversight.'
+        'LynxGuard is an AI-powered moderation system that operates around-the-clock to assist staff in effectively enforcing rules across Emergency Response: Liberty County (ERLC) servers. While tracking player behavior in real time to give moderators clear, useful insights, it automatically identifies common infractions like Random Deathmatch, New Life Rule violations, and unrealistic avatars. This lessens the workload for employees, speeds up response times, and supports the upkeep of equitable, well-organized roleplay environments. This is the official LynxGuard Community server for important announcements, system alerts, and product updates.'
       )
-    )
-    .addSeparatorComponents((separator) =>
-      separator.setSpacing(SeparatorSpacingSize.Large)
-    )
-    .addSectionComponents((section) =>
-      section
-        .addTextDisplayComponents((textDisplay) =>
-          textDisplay.setContent(
-            'LynxGuard is backed by a dedicated 24/7 development and support team committed to maintaining stability, rolling out improvements, and assisting server staff whenever needed. Our team ensures continuous updates, rapid issue resolution, and reliable support to keep your ERLC server running without interruption.'
-          )
-        )
-        .setButtonAccessory((button) =>
-          button
-            .setCustomId('assistance_button')
-            .setLabel('Assistance')
-            .setStyle(ButtonStyle.Primary)
-        )
     )
     .addSeparatorComponents((separator) =>
       separator
         .setDivider(true)
         .setSpacing(SeparatorSpacingSize.Large)
     )
-    .addSectionComponents((section) =>
-      section
+    .addTextDisplayComponents((textDisplay) =>
+      textDisplay.setContent('## Server Guide')
+    )
+    .addSectionComponents((section) => {
+      const assistanceButton = new (require('discord.js').ButtonBuilder)()
+        .setCustomId('assistance_button')
+        .setLabel('Assistance')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('1451073001792737300');
+      
+      return section
         .addTextDisplayComponents((textDisplay) =>
           textDisplay.setContent(
-            'Bugs can be reported at any time through our report system,\n allowing our development team to quickly review, track,\n and resolve issues to maintain system stability and performance.\n\n'
+            '**Require Assistance?** If you need assistance, please click the button to the right to contact our support team. A team member will respond as soon as possible.'
           )
         )
-        .setButtonAccessory((button) =>
-          button
-            .setCustomId('bugs_errors_button')
-            .setLabel('Bugs & Errors')
-            .setStyle(ButtonStyle.Danger)
+        .setButtonAccessory(assistanceButton);
+    })
+    .addSectionComponents((section) => {
+      const bugsButton = new (require('discord.js').ButtonBuilder)()
+        .setCustomId('bugs_errors_button')
+        .setLabel('Bugs')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('1451072866786476032');
+      
+      return section
+        .addTextDisplayComponents((textDisplay) =>
+          textDisplay.setContent(
+            '**Bugs you noticed?** If you\'ve encountered a bug, please click the button to the right and complete the report form. Our team will review the issue and address the rest.'
+          )
         )
-    )
+        .setButtonAccessory(bugsButton);
+    })
+    .addSectionComponents((section) => {
+      const applicationButton = new (require('discord.js').ButtonBuilder)()
+        .setCustomId('apply_button')
+        .setLabel('Application')
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji('1451072968548684028');
+      
+      return section
+        .addTextDisplayComponents((textDisplay) =>
+          textDisplay.setContent(
+            '**Looking to apply for the support team?** Click the button to the right to submit your application.'
+          )
+        )
+        .setButtonAccessory(applicationButton);
+    })
     .addTextDisplayComponents((textDisplay) =>
-      textDisplay.setContent('-# Ⓒ LynxGuard 2025')
+      textDisplay.setContent('☀️ *Moderation, Powered by Intelligence.*')
     );
 
   const containerData = container.toJSON();
@@ -182,15 +202,27 @@ async function sendInformationEmbed(channel) {
         components: [
           {
             type: 2,
-            style: ButtonStyle.Secondary,
-            label: 'Application',
-            custom_id: 'apply_button'
+            style: ButtonStyle.Link,
+            label: 'Website',
+            url: 'https://www.lynxguard.xyz/'
           },
           {
             type: 2,
             style: ButtonStyle.Link,
-            label: 'Website',
-            url: 'https://lynxguard.xyz'
+            label: 'Privacy Policy',
+            url: 'https://www.lynxguard.xyz/privacy'
+          },
+          {
+            type: 2,
+            style: ButtonStyle.Link,
+            label: 'Terms of Service',
+            url: 'https://www.lynxguard.xyz/terms'
+          },
+          {
+            type: 2,
+            style: ButtonStyle.Link,
+            label: 'FAQ',
+            url: 'https://www.lynxguard.xyz/faq'
           }
         ]
       }
