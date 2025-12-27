@@ -67,7 +67,6 @@ module.exports = {
 
       await connectDB();
 
-      // Delete all old entries of this embed type in this guild
       const deleteResult = await Embed.deleteMany({
         guildId: interaction.guildId,
         embedType: embedType
@@ -81,7 +80,6 @@ module.exports = {
         sentMessage = await sendInformationEmbed(targetChannel);
       }
       
-      // Create new entry for the newly sent embed
       await Embed.create({
         messageId: sentMessage.id,
         channelId: targetChannel.id,
